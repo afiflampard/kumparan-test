@@ -45,41 +45,41 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: '1.22'
+
+      - name: Set up ENV file
+        run: |
+          echo "APP_NAME=HertzApp" >> .env
+          echo "PORT=8080" >> .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
+          echo "DB_USER=hertz_user" >> .env
+          echo "DB_PASSWORD=hertz_pass" >> .env
+          echo "DB_NAME=hertz_db" >> .env
+          echo "JWT_SECRET=supersecret" >> .env
+          echo "ELASTIC_URL=http://localhost:9200" >> .env
 
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Wait for services
-        run: |
-          echo "Waiting for PostgreSQL..."
-          until pg_isready -h localhost -p 5432 -U hertz_user; do sleep 2; done
-          echo "Waiting for Elasticsearch..."
-          until curl -s http://localhost:9200/_cluster/health | grep -q '"status"'; do sleep 5; done
+      - name: Install sql-migrate
+        run: go install github.com/rubenv/sql-migrate/...@latest
 
-      - name: Create .env file
-        run: |
-          cat <<EOF > .env
-          APP_NAME=HertzApp
-          PORT=8080
-          DB_HOST=localhost
-          DB_PORT=5432
-          DB_USER=hertz_user
-          DB_PASSWORD=hertz_pass
-          DB_NAME=hertz_db
-          JWT_SECRET=supersecret
-          ELASTIC_URL=http://localhost:9200
-          EOF
-
-      - name: Run Tests
+      - name: Run DB Migrations
         env:
-          APP_NAME: HertzApp
-          PORT: 8080
           DB_HOST: localhost
           DB_PORT: 5432
           DB_USER: hertz_user
           DB_PASSWORD: hertz_pass
           DB_NAME: hertz_db
-          JWT_SECRET: supersecret
-          ELASTIC_URL: http://localhost:9200
+        run: |
+          export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
+
+          echo "Running author migrations..."
+          sql-migrate up -config=domain/authors/migration/dbconfig.yml -env=development
+
+          echo "Running article migrations..."
+          sql-migrate up -config=domain/articles/migration/dbconfig.yml -env=development
+
+      - name: Run tests
         run: go test ./... -v
