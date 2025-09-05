@@ -76,10 +76,10 @@ jobs:
           export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
 
           echo "Running author migrations..."
-          sql-migrate up -config=domain/authors/migration/dbconfig.yml -env=development
+          sql-migrate up -config=domain/authors/dbconfig.yml -env=development
 
           echo "Running article migrations..."
-          sql-migrate up -config=domain/articles/migration/dbconfig.yml -env=development
+          sql-migrate up -config=domain/articles/dbconfig.yml -env=development
 
       - name: Run tests
         run: go test ./... -v
