@@ -1,0 +1,78 @@
+# version: '3.8'
+
+services:
+  hertz-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hertz-app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - hertz-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: hertz-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: hertz_user
+      POSTGRES_PASSWORD: hertz_pass
+      POSTGRES_DB: hertz_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hertz-net
+  
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.23
+    container_name: hertz-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # disable auth for dev
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # set memory
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200" # REST API
+      - "9300:9300" # internal cluster comms
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.23
+    container_name: hertz-kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - hertz-net
+
+volumes:
+  pgdata:
+  esdata:
+  portainer_data:
+
+networks:
+  hertz-net:

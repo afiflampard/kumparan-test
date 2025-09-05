@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: hertz_user
+          POSTGRES_PASSWORD: hertz_pass
+          POSTGRES_DB: hertz_db
+        options: >-
+          --health-cmd="pg_isready -U hertz_user -d hertz_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
+        ports:
+          - 9200:9200
+        env:
+          discovery.type: single-node
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+        options: >-
+          --health-cmd="curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Wait for services
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until pg_isready -h localhost -p 5432 -U hertz_user; do sleep 2; done
+          echo "Waiting for Elasticsearch..."
+          until curl -s http://localhost:9200/_cluster/health | grep -q '"status"'; do sleep 5; done
+
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          APP_NAME=HertzApp
+          PORT=8080
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_USER=hertz_user
+          DB_PASSWORD=hertz_pass
+          DB_NAME=hertz_db
+          JWT_SECRET=supersecret
+          ELASTIC_URL=http://localhost:9200
+          EOF
+
+      - name: Run Tests
+        env:
+          APP_NAME: HertzApp
+          PORT: 8080
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: hertz_user
+          DB_PASSWORD: hertz_pass
+          DB_NAME: hertz_db
+          JWT_SECRET: supersecret
+          ELASTIC_URL: http://localhost:9200
+        run: go test ./... -v

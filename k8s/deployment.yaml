@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hertz-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hertz-app
+  template:
+    metadata:
+      labels:
+        app: hertz-app
+    spec:
+      containers:
+        - name: app
+          image: afif/hertz-app:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: app-secret
