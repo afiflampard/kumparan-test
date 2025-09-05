@@ -19,6 +19,15 @@ func NewAppHandler(svc *service.Service) *AppHandler {
 	return &AppHandler{svc: svc}
 }
 
+// @Summary Create author
+// @Tags Author
+// @Accept json
+// @Produce json
+// @Param author body authors.AuthorInput true "Author input"
+// @Success 200 {object} string "UUID"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /author/create [post]
 func (h *AppHandler) CreateAuthor(ctx context.Context, c *app.RequestContext) {
 	var author authors.AuthorInput
 	if err := c.Bind(&author); err != nil {
@@ -35,6 +44,15 @@ func (h *AppHandler) CreateAuthor(ctx context.Context, c *app.RequestContext) {
 	infra.JSONSuccess(c, id, "Author created successfully")
 }
 
+// @Summary Create article
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param article body articles.ArticleInput true "Article input"
+// @Success 200 {object} string "UUID"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/create [post]
 func (h *AppHandler) CreateArticle(ctx context.Context, c *app.RequestContext) {
 	var article articles.ArticleInput
 	if err := c.Bind(&article); err != nil {
@@ -51,6 +69,15 @@ func (h *AppHandler) CreateArticle(ctx context.Context, c *app.RequestContext) {
 	infra.JSONSuccess(c, id, "Article created successfully")
 }
 
+// @Summary Create many article
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param article body []articles.ArticleInput true "Article input list"
+// @Success 200 {array} string "UUID list"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/create-bulk [post]
 func (h *AppHandler) CreateManyArticle(ctx context.Context, c *app.RequestContext) {
 	var articleList []*articles.ArticleInput
 	if err := c.Bind(&articleList); err != nil {
@@ -67,6 +94,16 @@ func (h *AppHandler) CreateManyArticle(ctx context.Context, c *app.RequestContex
 	infra.JSONSuccess(c, idList, "Article created successfully")
 }
 
+// @Summary Update article
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param id path string true "Article ID"
+// @Param article body articles.ArticleInput true "Article input"
+// @Success 200 {object} string "UUID"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/update/{id} [put]
 func (h *AppHandler) UpdateArticle(ctx context.Context, c *app.RequestContext) {
 	var article articles.ArticleInput
 	if err := c.Bind(&article); err != nil {
@@ -89,6 +126,15 @@ func (h *AppHandler) UpdateArticle(ctx context.Context, c *app.RequestContext) {
 	infra.JSONSuccess(c, id, "Article updated successfully")
 }
 
+// @Summary Get article by key word
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param keyword query string true "Keyword"
+// @Success 200 {array} articles.Article
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/search [get]
 func (h *AppHandler) GetArticleByKeyWord(ctx context.Context, c *app.RequestContext) {
 	keyword := c.Query("keyword")
 	if keyword == "" {
@@ -105,6 +151,15 @@ func (h *AppHandler) GetArticleByKeyWord(ctx context.Context, c *app.RequestCont
 	infra.JSONSuccess(c, articleList, "Article list")
 }
 
+// @Summary Get article with author by ID
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param id path string true "Author ID"
+// @Success 200 {object} articles.ArticleWithAuthor
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/author/{id} [get]
 func (h *AppHandler) GetArticleWithAuthorByID(ctx context.Context, c *app.RequestContext) {
 	idAuthor := c.Param("id")
 	if idAuthor == "" {
@@ -121,6 +176,16 @@ func (h *AppHandler) GetArticleWithAuthorByID(ctx context.Context, c *app.Reques
 	infra.JSONSuccess(c, articleList, "Article list")
 }
 
+// @Summary Update author
+// @Tags Author
+// @Accept json
+// @Produce json
+// @Param id path string true "Author ID"
+// @Param author body authors.AuthorInput true "Author input"
+// @Success 200 {object} string "UUID"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /author/update/{id} [put]
 func (h *AppHandler) UpdateAuthor(ctx context.Context, c *app.RequestContext) {
 	var author authors.AuthorInput
 	if err := c.Bind(&author); err != nil {
@@ -143,6 +208,15 @@ func (h *AppHandler) UpdateAuthor(ctx context.Context, c *app.RequestContext) {
 	infra.JSONSuccess(c, id, "Author updated successfully")
 }
 
+// @Summary Get article by author name
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param name query string true "Author name"
+// @Success 200 {array} articles.ArticleWithAuthor
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/author-name [get]
 func (h *AppHandler) GetArticleByAuthorName(ctx context.Context, c *app.RequestContext) {
 	name := c.Query("name")
 	if name == "" {
