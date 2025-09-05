@@ -1,4 +1,5 @@
 development:
   dialect: postgres
   datasource: host=localhost user=hertz_user dbname=hertz_db password=hertz_pass sslmode=disable
-  dir: db/migrations
+  dir: domain/authors/db/migrations
+  table: migrations_authors
