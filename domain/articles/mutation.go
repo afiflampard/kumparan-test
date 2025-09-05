@@ -2,7 +2,6 @@ package articles
 
 import (
 	"context"
-	"errors"
 
 	"github.com/afif-musyayyidin/hertz-boilerplate/domain/authors"
 	"github.com/google/uuid"
@@ -47,11 +46,15 @@ func (m *articleMutation) CreateArticle(ctx context.Context, u *ArticleInput) (*
 func (m *articleMutation) GetArticleByID(ctx context.Context, id uuid.UUID) (*Article, error) {
 	article, err := m.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"id": id,
+		})
 	}
 	getAuthor, err := m.author.GetAuthorByID(ctx, article.AuthorID)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"id": article.AuthorID,
+		})
 	}
 	article.Author = getAuthor
 	return article, nil
@@ -59,10 +62,14 @@ func (m *articleMutation) GetArticleByID(ctx context.Context, id uuid.UUID) (*Ar
 
 func (m *articleMutation) UpdateArticle(ctx context.Context, u *ArticleInput, id uuid.UUID) (*uuid.UUID, error) {
 	if u == nil {
-		return nil, errors.New("user is nil")
+		return nil, ErrInvalidInput.WithDetails(map[string]interface{}{
+			"id": id,
+		})
 	}
 	if id == uuid.Nil {
-		return nil, errors.New("missing user ID")
+		return nil, ErrInvalidInput.WithDetails(map[string]interface{}{
+			"id": id,
+		})
 	}
 	m.repo.Update(ctx, u, id)
 	m.index.UpdateField(ctx, id.String(), map[string]interface{}{
@@ -79,7 +86,9 @@ func (m *articleMutation) GetArticleByAuthorName(ctx context.Context, name strin
 	)
 	getIDNameListAuthor, err := m.author.FindIDNameByName(ctx, name)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"name": name,
+		})
 	}
 	for _, authorID := range getIDNameListAuthor {
 		authorIDList = append(authorIDList, authorID.ID)
@@ -92,7 +101,9 @@ func (m *articleMutation) GetArticleByAuthorName(ctx context.Context, name strin
 	}
 	articleList, err := m.index.GetArticleByAuthorIDList(ctx, authorIDList)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"authorIDList": authorIDList,
+		})
 	}
 	for _, article := range articleList {
 		if _, ok := authorArticleWithAuthorMap[article.AuthorID]; !ok {
@@ -114,14 +125,18 @@ func (m *articleMutation) GetArticleByKeyWord(ctx context.Context, keyword strin
 	)
 	articleList, err := m.index.Search(ctx, keyword)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"keyword": keyword,
+		})
 	}
 	for _, article := range articleList {
 		idAuthorList = append(idAuthorList, article.AuthorID)
 	}
 	authorListResult, err := m.author.GetAuthorByIDList(ctx, idAuthorList)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"id_author_list": idAuthorList,
+		})
 	}
 	for _, author := range authorListResult {
 		authorList[author.ID] = author
@@ -137,11 +152,15 @@ func (m *articleMutation) CreateManyArticle(ctx context.Context, u []*ArticleInp
 	var articleListID []*uuid.UUID
 	articleList, err := m.repo.CreateManyArticle(ctx, u)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"article_list": articleList,
+		})
 	}
 	for _, article := range articleList {
 		if err := m.index.Index(ctx, &Article{ID: article.ID, Title: article.Title, Body: article.Body, AuthorID: article.AuthorID}); err != nil {
-			return nil, err
+			return nil, ErrNotFound.WithDetails(map[string]interface{}{
+				"article": article,
+			})
 		}
 	}
 	for _, article := range articleList {
@@ -154,12 +173,16 @@ func (m *articleMutation) GetArticleWithAuthorByID(ctx context.Context, id uuid.
 
 	getAuthor, err := m.author.GetAuthorByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"id": id,
+		})
 	}
 
 	getArticle, err := m.index.GetArticleByAuthorID(ctx, getAuthor.ID)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"id_author": getAuthor.ID,
+		})
 	}
 
 	// getArticle, err := m.repo.FindAllArticleWithAuthorByAuthorID(ctx, getAuthor.ID)
