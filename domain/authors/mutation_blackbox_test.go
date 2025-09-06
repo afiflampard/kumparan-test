@@ -118,16 +118,19 @@ func TestGetAuthorByID(t *testing.T) {
 
 	authorID := uuid.New()
 
+	name := uuid.NewString()
+	email := uuid.NewString() + "@example.com"
+
 	_, err := testDB.Exec(
 		`INSERT INTO authors (id, name, email) VALUES ($1, $2, $3)`,
-		authorID, "Fifa", "fifa@example.com",
+		authorID, name, email,
 	)
 	assert.NoError(t, err)
 
 	author, err := mutation.GetAuthorByID(ctx, authorID)
 	assert.NoError(t, err)
 	assert.NotNil(t, author)
-	assert.Equal(t, "Fifa", author.Name)
+	assert.Equal(t, name, author.Name)
 }
 
 func TestFindIDNameByName(t *testing.T) {
@@ -135,14 +138,17 @@ func TestFindIDNameByName(t *testing.T) {
 
 	authorID := uuid.New()
 
+	name := uuid.NewString()
+	email := uuid.NewString() + "@example.com"
+
 	_, err := testDB.Exec(
 		`INSERT INTO authors (id, name, email) VALUES ($1, $2, $3)`,
-		authorID, "Messi", "messi@example.com",
+		authorID, name, email,
 	)
 	assert.NoError(t, err)
 
-	result, err := mutation.FindIDNameByName(ctx, "Messi")
+	result, err := mutation.FindIDNameByName(ctx, name)
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
-	assert.Equal(t, "Messi", result[0].Name)
+	assert.Equal(t, name, result[0].Name)
 }

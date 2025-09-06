@@ -79,9 +79,14 @@ func TestCreateArticle(t *testing.T) {
 	cleanDB()
 	mutation := newMutation()
 
+	_, err := es.CreateIndex("articles").Do(ctx)
+	if err != nil && !elastic.IsStatusCode(err, 400) {
+		t.Fatal(err)
+	}
+
 	authorID := uuid.New()
 
-	_, err := testDB.Exec(
+	_, err = testDB.Exec(
 		`INSERT INTO authors (id, name, email) VALUES ($1, $2, $3)`,
 		authorID, "Fifa", "fifa@example.com",
 	)
