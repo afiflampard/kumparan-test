@@ -5,7 +5,7 @@ Go API boilerplate menggunakan CloudWeGo Hertz, PostgreSQL (sqlx/pgx), Elasticse
 ## ✨ Features
 
 - High-performance HTTP server dengan CloudWeGo Hertz
-- PostgreSQL via sqlx (driver pgx) dengan health check koneksi
+- PostgreSQL via sqlx (driver pgx) dengan health check koneksi dan Replica
 - Integrasi Elasticsearch v7 untuk pencarian
 - Swagger UI tersedia di `/swagger/index.html`
 - Arsitektur berlapis: router, handler, service, domain, infra
@@ -61,6 +61,8 @@ DB_PORT=5432
 DB_USER=hertz_user
 DB_PASSWORD=hertz_pass
 DB_NAME=hertz_db
+DB_REPLICA_HOST=postgres-replica
+DB_REPLICA_PORT=5432
 JWT_SECRET=supersecret
 ELASTIC_URL=http://elasticsearch:9200
 ```
