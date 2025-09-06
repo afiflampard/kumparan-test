@@ -113,6 +113,7 @@ func TestUpdateAuthor(t *testing.T) {
 }
 
 func TestGetAuthorByID(t *testing.T) {
+	cleanDB()
 	mutation := newMutation()
 
 	authorID := uuid.New()
