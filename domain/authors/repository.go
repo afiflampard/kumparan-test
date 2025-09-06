@@ -12,7 +12,4 @@ type AuthorRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Author, error)
 	FindByIDList(ctx context.Context, idList []uuid.UUID) ([]Author, error)
 	FindIDNameByName(ctx context.Context, name string) ([]*AuthorIDName, error)
-
-	Commit(ctx context.Context) error
-	Cancel(ctx context.Context)
 }

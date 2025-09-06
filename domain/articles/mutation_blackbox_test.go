@@ -66,12 +66,14 @@ func cleanDB() {
 }
 
 func newMutation() articles.ArticleMutation {
-	authorRepo := authors.NewAuthorRepo(ctx, testDB)
-	articleRepo := articles.NewArticleRepo(ctx, testDB)
+	ctx := context.Background()
 	indexer := articles.NewArticleIndexer(es)
-	authorMutation := authors.NewAuthorMutation(authorRepo)
+	repo := articles.NewArticleRepo(ctx, testDB)
 
-	return articles.NewArticleMutation(articleRepo, indexer, authorMutation)
+	authorRepo := authors.NewAuthorRepo(testDB)
+	authorMutation := authors.NewAuthorMutation(authorRepo, testDB)
+
+	return articles.NewArticleMutation(repo, indexer, testDB, authorMutation)
 }
 func TestCreateArticle(t *testing.T) {
 	cleanDB()
@@ -97,9 +99,6 @@ func TestCreateArticle(t *testing.T) {
 	id, err := mutation.CreateArticle(ctx, &input)
 	assert.NoError(t, err)
 	assert.NotNil(t, id)
-
-	err = mutation.Commit(ctx)
-	assert.NoError(t, err)
 
 	// verify in DB
 	var title string
@@ -134,7 +133,6 @@ func TestUpdateArticle(t *testing.T) {
 	}
 	id, err := mutation.CreateArticle(ctx, &input)
 	assert.NoError(t, err)
-	_ = mutation.Commit(ctx)
 
 	mutation2 := newMutation()
 	updateInput := articles.ArticleInput{
@@ -144,7 +142,6 @@ func TestUpdateArticle(t *testing.T) {
 	}
 	_, err = mutation2.UpdateArticle(ctx, &updateInput, *id)
 	assert.NoError(t, err)
-	_ = mutation2.Commit(ctx)
 
 	var title string
 	err = testDB.Get(&title, "SELECT title FROM articles WHERE id = $1", *id)
@@ -177,9 +174,7 @@ func TestGetArticleByID(t *testing.T) {
 	}
 	id, err := mutation.CreateArticle(ctx, &input)
 	assert.NoError(t, err)
-	_ = mutation.Commit(ctx)
-	mutation2 := newMutation()
-	article, err := mutation2.GetArticleByID(ctx, *id)
+	article, err := mutation.GetArticleByID(ctx, *id)
 	assert.NoError(t, err)
 	assert.Equal(t, "Get Title", article.Title)
 	assert.Equal(t, "Rani", article.Author.Name)
@@ -204,12 +199,9 @@ func TestGetArticleWithAuthorByID(t *testing.T) {
 	_, err = mutation.CreateArticle(ctx, &input)
 	require.NoError(t, err)
 
-	_ = mutation.Commit(ctx)
-
 	_, _ = es.Refresh("articles").Do(ctx)
 
-	mutation2 := newMutation()
-	result, err := mutation2.GetArticleWithAuthorByID(ctx, authorID)
+	result, err := mutation.GetArticleWithAuthorByID(ctx, authorID)
 	require.NoError(t, err)
 
 	assert.Equal(t, "Siti", result.Author.Name)

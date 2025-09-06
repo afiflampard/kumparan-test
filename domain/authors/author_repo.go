@@ -9,15 +9,11 @@ import (
 )
 
 type AuthorRepo struct {
-	db *sqlx.Tx
+	db *sqlx.DB
 }
 
-func NewAuthorRepo(ctx context.Context, db *sqlx.DB) AuthorRepository {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil
-	}
-	return &AuthorRepo{db: tx}
+func NewAuthorRepo(db *sqlx.DB) AuthorRepository {
+	return &AuthorRepo{db: db}
 }
 
 func (r *AuthorRepo) Save(ctx context.Context, u *AuthorInput) (*uuid.UUID, error) {
@@ -70,17 +66,4 @@ func (r *AuthorRepo) FindIDNameByName(ctx context.Context, name string) ([]*Auth
 		return nil, err
 	}
 	return idNameList, nil
-}
-
-func (r *AuthorRepo) Commit(ctx context.Context) error {
-	if r != nil {
-		return r.db.Commit()
-	}
-	return nil
-}
-
-func (r *AuthorRepo) Cancel(ctx context.Context) {
-	if r != nil {
-		_ = r.db.Rollback()
-	}
 }

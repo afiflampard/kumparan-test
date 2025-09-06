@@ -64,8 +64,8 @@ func cleanDB() {
 }
 
 func newMutation() authors.AuthorMutation {
-	repo := authors.NewAuthorRepo(ctx, testDB)
-	return authors.NewAuthorMutation(repo)
+	repo := authors.NewAuthorRepo(testDB)
+	return authors.NewAuthorMutation(repo, testDB)
 }
 func TestCreateAuthor(t *testing.T) {
 	mutation := newMutation()
@@ -78,9 +78,6 @@ func TestCreateAuthor(t *testing.T) {
 	id, err := mutation.CreateAuthor(ctx, &input)
 	assert.NoError(t, err)
 	assert.NotNil(t, id)
-
-	err = mutation.Commit(ctx)
-	assert.NoError(t, err)
 
 	var name string
 	err = testDB.Get(&name, "SELECT name FROM authors WHERE id = $1", *id)
@@ -107,9 +104,6 @@ func TestUpdateAuthor(t *testing.T) {
 	id, err := mutation.UpdateAuthor(ctx, &input, authorID)
 	assert.NoError(t, err)
 	assert.NotNil(t, id)
-
-	err = mutation.Commit(ctx)
-	assert.NoError(t, err)
 
 	// verify in DB
 	var name string

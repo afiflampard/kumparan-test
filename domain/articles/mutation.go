@@ -5,6 +5,7 @@ import (
 
 	"github.com/afif-musyayyidin/hertz-boilerplate/domain/authors"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type ArticleMutation interface {
@@ -15,32 +16,44 @@ type ArticleMutation interface {
 	GetArticleWithAuthorByID(ctx context.Context, id uuid.UUID) (*ArticleWithAuthor, error)
 	GetArticleByAuthorName(ctx context.Context, name string) ([]*ArticleWithAuthor, error)
 	GetArticleByID(ctx context.Context, id uuid.UUID) (*Article, error)
-
-	Commit(ctx context.Context) error
-	Cancel(ctx context.Context)
 }
 
 type articleMutation struct {
 	repo   ArticleRepository
 	index  ArticleIndexer
+	db     *sqlx.DB
 	author authors.AuthorMutation
 }
 
-func NewArticleMutation(repo ArticleRepository, index ArticleIndexer, author authors.AuthorMutation) ArticleMutation {
-	return &articleMutation{repo: repo, index: index, author: author}
+func NewArticleMutation(repo ArticleRepository, index ArticleIndexer, db *sqlx.DB, author authors.AuthorMutation) ArticleMutation {
+	return &articleMutation{
+		repo:   repo,
+		index:  index,
+		db:     db,
+		author: author,
+	}
 }
 
 func (m *articleMutation) CreateArticle(ctx context.Context, u *ArticleInput) (*uuid.UUID, error) {
-	id, err := m.repo.Save(ctx, u)
+	tx, err := m.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := m.index.Index(ctx, &Article{ID: *id, Title: u.Title, Body: u.Body, AuthorID: u.AuthorID}); err != nil {
+	newArticle, err := m.repo.Save(ctx, u, tx)
+	if err != nil {
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	return id, nil
+	if err := m.index.Index(ctx, newArticle); err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &newArticle.ID, nil
 }
 
 func (m *articleMutation) GetArticleByID(ctx context.Context, id uuid.UUID) (*Article, error) {
@@ -71,12 +84,26 @@ func (m *articleMutation) UpdateArticle(ctx context.Context, u *ArticleInput, id
 			"id": id,
 		})
 	}
-	m.repo.Update(ctx, u, id)
-	m.index.UpdateField(ctx, id.String(), map[string]interface{}{
+	tx, err := m.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	idResult, err := m.repo.Update(ctx, u, id, tx)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := m.index.UpdateField(ctx, id.String(), map[string]interface{}{
 		"title": u.Title,
 		"body":  u.Body,
-	})
-	return &id, nil
+	}); err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return idResult, nil
 }
 
 func (m *articleMutation) GetArticleByAuthorName(ctx context.Context, name string) ([]*ArticleWithAuthor, error) {
@@ -150,14 +177,20 @@ func (m *articleMutation) GetArticleByKeyWord(ctx context.Context, keyword strin
 
 func (m *articleMutation) CreateManyArticle(ctx context.Context, u []*ArticleInput) ([]*uuid.UUID, error) {
 	var articleListID []*uuid.UUID
-	articleList, err := m.repo.CreateManyArticle(ctx, u)
+	tx, err := m.db.BeginTxx(ctx, nil)
 	if err != nil {
+		return nil, err
+	}
+	articleList, err := m.repo.CreateManyArticle(ctx, u, tx)
+	if err != nil {
+		_ = tx.Rollback()
 		return nil, ErrNotFound.WithDetails(map[string]interface{}{
 			"article_list": articleList,
 		})
 	}
 	for _, article := range articleList {
-		if err := m.index.Index(ctx, &Article{ID: article.ID, Title: article.Title, Body: article.Body, AuthorID: article.AuthorID}); err != nil {
+		if err := m.index.Index(ctx, &article); err != nil {
+			_ = tx.Rollback()
 			return nil, ErrNotFound.WithDetails(map[string]interface{}{
 				"article": article,
 			})
@@ -165,6 +198,9 @@ func (m *articleMutation) CreateManyArticle(ctx context.Context, u []*ArticleInp
 	}
 	for _, article := range articleList {
 		articleListID = append(articleListID, &article.ID)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return articleListID, nil
 }
@@ -194,14 +230,4 @@ func (m *articleMutation) GetArticleWithAuthorByID(ctx context.Context, id uuid.
 		Author:  *getAuthor,
 		Article: getArticle,
 	}, nil
-}
-
-// Cancel implements ArticleMutation.
-func (m *articleMutation) Cancel(ctx context.Context) {
-	m.repo.Cancel(ctx)
-}
-
-// Commit implements ArticleMutation.
-func (m *articleMutation) Commit(ctx context.Context) error {
-	return m.repo.Commit(ctx)
 }

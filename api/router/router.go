@@ -13,7 +13,7 @@ import (
 )
 
 func SetupRouter(ctx context.Context, h *server.Hertz, db *sqlx.DB, es *elastic.Client) {
-	repoAuthors := authors.NewAuthorRepo(ctx, db)
+	repoAuthors := authors.NewAuthorRepo(db)
 	repoArticles := articles.NewArticleRepo(ctx, db)
 	indexArticles := articles.NewArticleIndexer(es)
 

@@ -9,15 +9,11 @@ import (
 )
 
 type ArticleRepo struct {
-	db *sqlx.Tx
+	db *sqlx.DB
 }
 
 func NewArticleRepo(ctx context.Context, db *sqlx.DB) ArticleRepository {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil
-	}
-	return &ArticleRepo{db: tx}
+	return &ArticleRepo{db: db}
 }
 
 // FindByID implements ArticleRepository.
@@ -30,28 +26,28 @@ func (a *ArticleRepo) FindByID(ctx context.Context, id uuid.UUID) (*Article, err
 }
 
 // Save implements ArticleRepository.
-func (a *ArticleRepo) Save(ctx context.Context, u *ArticleInput) (*uuid.UUID, error) {
+func (a *ArticleRepo) Save(ctx context.Context, u *ArticleInput, tx *sqlx.Tx) (*Article, error) {
 	newArticle := CreateNewArticle(*u)
-	_, err := a.db.NamedExecContext(ctx, CreateArticleQuery, newArticle)
+	_, err := tx.NamedExecContext(ctx, CreateArticleQuery, newArticle)
 	if err != nil {
 		return nil, err
 	}
-	return &newArticle.ID, nil
+	return &newArticle, nil
 }
 
 // Update implements ArticleRepository.
-func (a *ArticleRepo) Update(ctx context.Context, u *ArticleInput, id uuid.UUID) (*uuid.UUID, error) {
+func (a *ArticleRepo) Update(ctx context.Context, u *ArticleInput, id uuid.UUID, tx *sqlx.Tx) (*uuid.UUID, error) {
 	article := u.ToArticleUpdate(id)
-	_, err := a.db.NamedExecContext(ctx, UpdateArticleQuery, article)
+	_, err := tx.NamedExecContext(ctx, UpdateArticleQuery, article)
 	if err != nil {
 		return nil, err
 	}
 	return &article.ID, nil
 }
 
-func (a *ArticleRepo) CreateManyArticle(ctx context.Context, u []*ArticleInput) ([]Article, error) {
+func (a *ArticleRepo) CreateManyArticle(ctx context.Context, u []*ArticleInput, tx *sqlx.Tx) ([]Article, error) {
 	articles := CreateManyArticle(u)
-	stmt, err := a.db.PrepareNamedContext(ctx, CreateArticleQuery)
+	stmt, err := tx.PrepareNamedContext(ctx, CreateArticleQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -80,19 +76,4 @@ func (a *ArticleRepo) FindAllArticleWithAuthorByAuthorID(ctx context.Context, id
 		return nil, err
 	}
 	return articles, nil
-}
-
-// Cancel implements ArticleRepository.
-func (a *ArticleRepo) Cancel(ctx context.Context) {
-	if a != nil {
-		_ = a.db.Rollback()
-	}
-}
-
-// Commit implements ArticleRepository.
-func (a *ArticleRepo) Commit(ctx context.Context) error {
-	if a != nil {
-		return a.db.Commit()
-	}
-	return nil
 }

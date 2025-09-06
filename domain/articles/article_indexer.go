@@ -38,6 +38,7 @@ func (i *articleIndexer) GetArticleByAuthorID(ctx context.Context, authorID uuid
 	searchResult, err := i.es.Search().
 		Index("articles").
 		Query(query).
+		Sort("created_at", false).
 		Do(ctx)
 	if err != nil {
 		return nil, err
@@ -60,6 +61,7 @@ func (i *articleIndexer) Search(ctx context.Context, keyword string) ([]*Article
 	searchResult, err := i.es.Search().
 		Index("articles").
 		Query(query).
+		Sort("created_at", false).
 		Do(ctx)
 	if err != nil {
 		return nil, err
@@ -93,6 +95,7 @@ func (i *articleIndexer) GetArticleByAuthorIDList(ctx context.Context, authorIDL
 	searchResult, err := i.es.Search().
 		Index("articles").
 		Query(query).
+		Sort("created_at", false).
 		Do(ctx)
 	if err != nil {
 		return nil, err

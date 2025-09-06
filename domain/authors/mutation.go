@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type AuthorMutation interface {
@@ -12,27 +13,38 @@ type AuthorMutation interface {
 	GetAuthorByID(ctx context.Context, id uuid.UUID) (*Author, error)
 	GetAuthorByIDList(ctx context.Context, idList []uuid.UUID) ([]Author, error)
 	FindIDNameByName(ctx context.Context, name string) ([]*AuthorIDName, error)
-
-	Commit(ctx context.Context) error
-	Cancel(ctx context.Context)
 }
 
 type authorMutation struct {
 	repo AuthorRepository
+	db   *sqlx.DB
 }
 
-func NewAuthorMutation(repo AuthorRepository) AuthorMutation {
-	return &authorMutation{repo: repo}
+func NewAuthorMutation(repo AuthorRepository, db *sqlx.DB) AuthorMutation {
+	return &authorMutation{repo: repo, db: db}
 }
 
 func (m *authorMutation) CreateAuthor(ctx context.Context, u *AuthorInput) (*uuid.UUID, error) {
+
 	if u == nil {
 		return nil, ErrInvalidInput
 	}
 	if u.Name == "" || u.Email == "" {
 		return nil, ErrInvalidInput
 	}
-	return m.repo.Save(ctx, u)
+	tx, err := m.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	id, err := m.repo.Save(ctx, u)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return id, nil
 }
 
 func (m *authorMutation) UpdateAuthor(ctx context.Context, u *AuthorInput, id uuid.UUID) (*uuid.UUID, error) {
@@ -42,7 +54,19 @@ func (m *authorMutation) UpdateAuthor(ctx context.Context, u *AuthorInput, id uu
 	if id == uuid.Nil {
 		return nil, ErrInvalidInput
 	}
-	return m.repo.Update(ctx, u, id)
+	tx, err := m.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	idResult, err := m.repo.Update(ctx, u, id)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return idResult, nil
 }
 
 func (m *authorMutation) FindIDNameByName(ctx context.Context, name string) ([]*AuthorIDName, error) {
@@ -55,12 +79,4 @@ func (m *authorMutation) GetAuthorByID(ctx context.Context, id uuid.UUID) (*Auth
 
 func (m *authorMutation) GetAuthorByIDList(ctx context.Context, idList []uuid.UUID) ([]Author, error) {
 	return m.repo.FindByIDList(ctx, idList)
-}
-
-func (m *authorMutation) Commit(ctx context.Context) error {
-	return m.repo.Commit(ctx)
-}
-
-func (m *authorMutation) Cancel(ctx context.Context) {
-	m.repo.Cancel(ctx)
 }
