@@ -64,6 +64,8 @@ jobs:
           echo "DB_PASSWORD=hertz_pass" >> .env
           echo "DB_NAME=hertz_db" >> .env
           echo "JWT_SECRET=supersecret" >> .env
+          echo "DB_REPLICA_HOST=localhost" >> .env
+          echo "DB_REPLICA_PORT=5432" >> .env
           echo "ELASTIC_URL=http://localhost:9200" >> .env
 
       - name: Install dependencies
