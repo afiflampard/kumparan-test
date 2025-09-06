@@ -74,6 +74,7 @@ func newMutation() articles.ArticleMutation {
 	return articles.NewArticleMutation(articleRepo, indexer, authorMutation)
 }
 func TestCreateArticle(t *testing.T) {
+	cleanDB()
 	mutation := newMutation()
 
 	authorID := uuid.New()
