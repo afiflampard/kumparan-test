@@ -12,11 +12,11 @@ const UpdateAuthorQuery = `
 `
 
 const FindAuthorByIDQuery = `
-	SELECT * FROM authors WHERE id = $1
+	SELECT id, name, email FROM authors WHERE id = $1
 `
 
 const FindAuthorByIDListQuery = `
-	SELECT * FROM authors WHERE id IN (?)
+	SELECT id, name, email FROM authors WHERE id IN (?)
 `
 
 const GetIDAuthorsByNameQuery = `

@@ -12,13 +12,13 @@ const UpdateArticleQuery = `
 `
 
 const FindArticleByIDQuery = `
-	SELECT * FROM articles WHERE id = $1
+	SELECT id, title, body, author_id FROM articles WHERE id = $1
 `
 
 const FindAllArticleByAuthorIDQuery = `
-	SELECT * FROM articles WHERE author_id = $1
+	SELECT id, title, body, author_id FROM articles WHERE author_id = $1
 `
 
 const FindAllArticleWithAuthorByAuthorIDQuery = `
-	SELECT * FROM articles WHERE author_id = $1
+	SELECT id, title, body, author_id FROM articles WHERE author_id = $1
 `
