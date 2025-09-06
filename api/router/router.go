@@ -12,8 +12,8 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-func SetupRouter(ctx context.Context, h *server.Hertz, db *sqlx.DB, es *elastic.Client) {
-	repoAuthors := authors.NewAuthorRepo(db)
+func SetupRouter(ctx context.Context, h *server.Hertz, db *sqlx.DB, dbReplica *sqlx.DB, es *elastic.Client) {
+	repoAuthors := authors.NewAuthorRepo(db, dbReplica)
 	repoArticles := articles.NewArticleRepo(ctx, db)
 	indexArticles := articles.NewArticleIndexer(es)
 

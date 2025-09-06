@@ -9,26 +9,33 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: postgres
+      DB_HOST: postgres-primary
       DB_PORT: 5432
       DB_USER: hertz_user
       DB_PASSWORD: hertz_pass
       DB_NAME: hertz_db
       JWT_SECRET: supersecret
+      DB_REPLICA_HOST: postgres-replica
+      DB_REPLICA_PORT: 5432
       ELASTIC_URL: http://elasticsearch:9200
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     networks:
       - hertz-net
 
-  postgres:
+  postgres-primary:
     image: postgres:15-alpine
-    container_name: hertz-postgres
+    container_name: hertz-postgres-primary
     restart: always
     environment:
       POSTGRES_USER: hertz_user
       POSTGRES_PASSWORD: hertz_pass
       POSTGRES_DB: hertz_db
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata-primary:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -38,7 +45,23 @@ services:
       start_period: 5s
     networks:
       - hertz-net
-  
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: hertz-postgres-replica
+    restart: always
+    environment:
+      POSTGRES_USER: hertz_user
+      POSTGRES_PASSWORD: hertz_pass
+      POSTGRES_DB: hertz_db
+      REPLICATE_FROM: postgres-primary
+    volumes:
+      - pgdata-replica:/var/lib/postgresql/data
+    depends_on:
+      - postgres-primary
+    networks:
+      - hertz-net
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.23
     container_name: hertz-elasticsearch
@@ -55,6 +78,11 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      retries: 12
+      start_period: 5s
     networks:
       - hertz-net
 
@@ -65,11 +93,15 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
       - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     networks:
       - hertz-net
 
 volumes:
-  pgdata:
+  pgdata-primary:
+  pgdata-replica:
   esdata:
 
 networks:

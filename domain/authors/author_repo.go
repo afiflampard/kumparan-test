@@ -9,11 +9,12 @@ import (
 )
 
 type AuthorRepo struct {
-	db *sqlx.DB
+	db        *sqlx.DB
+	dbReplica *sqlx.DB
 }
 
-func NewAuthorRepo(db *sqlx.DB) AuthorRepository {
-	return &AuthorRepo{db: db}
+func NewAuthorRepo(db *sqlx.DB, dbReplica *sqlx.DB) AuthorRepository {
+	return &AuthorRepo{db: db, dbReplica: dbReplica}
 }
 
 func (r *AuthorRepo) Save(ctx context.Context, u *AuthorInput) (*uuid.UUID, error) {
@@ -37,7 +38,7 @@ func (r *AuthorRepo) Update(ctx context.Context, u *AuthorInput, id uuid.UUID) (
 
 func (r *AuthorRepo) FindByID(ctx context.Context, id uuid.UUID) (*Author, error) {
 	var u Author
-	if err := r.db.GetContext(ctx, &u, FindAuthorByIDQuery, id); err != nil {
+	if err := r.dbReplica.GetContext(ctx, &u, FindAuthorByIDQuery, id); err != nil {
 		logger.Debug("error find by id", err)
 		return nil, err
 	}
@@ -51,8 +52,8 @@ func (r *AuthorRepo) FindByIDList(ctx context.Context, idList []uuid.UUID) ([]Au
 		return nil, err
 	}
 
-	query = r.db.Rebind(query)
-	if err := r.db.SelectContext(ctx, &uList, query, args...); err != nil {
+	query = r.dbReplica.Rebind(query)
+	if err := r.dbReplica.SelectContext(ctx, &uList, query, args...); err != nil {
 		logger.Debug("error find by id list", err)
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (r *AuthorRepo) FindByIDList(ctx context.Context, idList []uuid.UUID) ([]Au
 
 func (r *AuthorRepo) FindIDNameByName(ctx context.Context, name string) ([]*AuthorIDName, error) {
 	var idNameList []*AuthorIDName
-	if err := r.db.SelectContext(ctx, &idNameList, GetIDAuthorsByNameQuery, name); err != nil {
+	if err := r.dbReplica.SelectContext(ctx, &idNameList, GetIDAuthorsByNameQuery, name); err != nil {
 		logger.Debug("error find by name", err)
 		return nil, err
 	}

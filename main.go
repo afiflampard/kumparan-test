@@ -20,11 +20,12 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	db := infra.InitPostgres(cfg)
+	dbReplica := infra.InitPostgresReplica(cfg)
 	ctx := context.Background()
 	es := infra.ConnectElasticsearch(cfg)
 
 	h := server.Default(server.WithHostPorts(":8080"))
-	router.SetupRouter(ctx, h, db, es)
+	router.SetupRouter(ctx, h, db, dbReplica, es)
 	h.GET("/swagger/*any", hertzSwagger.WrapHandler(swaggerFiles.Handler))
 	h.Spin()
 }

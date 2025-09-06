@@ -70,7 +70,7 @@ func newMutation() articles.ArticleMutation {
 	indexer := articles.NewArticleIndexer(es)
 	repo := articles.NewArticleRepo(ctx, testDB)
 
-	authorRepo := authors.NewAuthorRepo(testDB)
+	authorRepo := authors.NewAuthorRepo(testDB, testDB)
 	authorMutation := authors.NewAuthorMutation(authorRepo, testDB)
 
 	return articles.NewArticleMutation(repo, indexer, testDB, authorMutation)

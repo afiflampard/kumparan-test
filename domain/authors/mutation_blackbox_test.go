@@ -64,7 +64,7 @@ func cleanDB() {
 }
 
 func newMutation() authors.AuthorMutation {
-	repo := authors.NewAuthorRepo(testDB)
+	repo := authors.NewAuthorRepo(testDB, testDB)
 	return authors.NewAuthorMutation(repo, testDB)
 }
 func TestCreateAuthor(t *testing.T) {
