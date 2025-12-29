@@ -89,6 +89,12 @@ jobs:
 
           echo "Running article migrations..."
           sql-migrate up -config=domain/articles/dbconfig.yml -env=development
+          
+      - name: Build Docker Image
+        run: |
+          docker build -t myusername/myapp:staging-${GITHUB_SHA::7} .
+          docker --version
+          echo "Docker image built successfully"
 
       - name: Run tests
         run: go test ./... -v

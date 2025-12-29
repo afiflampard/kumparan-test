@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # ------------------ Hertz App ------------------
   hertz-app:
     build:
       context: .
@@ -26,6 +27,7 @@ services:
     networks:
       - hertz-net
 
+  # ------------------ PostgreSQL Primary ------------------
   postgres-primary:
     image: postgres:15-alpine
     container_name: hertz-postgres-primary
@@ -46,6 +48,7 @@ services:
     networks:
       - hertz-net
 
+  # ------------------ PostgreSQL Replica (dummy) ------------------
   postgres-replica:
     image: postgres:15-alpine
     container_name: hertz-postgres-replica
@@ -54,7 +57,6 @@ services:
       POSTGRES_USER: hertz_user
       POSTGRES_PASSWORD: hertz_pass
       POSTGRES_DB: hertz_db
-      REPLICATE_FROM: postgres-primary
     volumes:
       - pgdata-replica:/var/lib/postgresql/data
     depends_on:
@@ -62,6 +64,7 @@ services:
     networks:
       - hertz-net
 
+  # ------------------ Elasticsearch ------------------
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.23
     container_name: hertz-elasticsearch
@@ -86,6 +89,7 @@ services:
     networks:
       - hertz-net
 
+  # ------------------ Kibana ------------------
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.23
     container_name: hertz-kibana
@@ -99,10 +103,42 @@ services:
     networks:
       - hertz-net
 
+  # ------------------ Local Docker Registry ------------------
+  registry:
+    image: registry:2
+    container_name: local-registry
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry_data:/var/lib/registry
+    networks:
+      - hertz-net
+
+  # ------------------ Jenkins ------------------
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: local-jenkins
+    user: root
+    ports:
+      - "8081:8080"   # Jenkins UI
+      - "50000:50000" # Jenkins agent
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/workspace
+    networks:
+      - hertz-net
+
+# ------------------ Volumes ------------------
 volumes:
   pgdata-primary:
   pgdata-replica:
   esdata:
+  registry_data:
+  jenkins_home:
 
+# ------------------ Networks ------------------
 networks:
   hertz-net:
+    driver: bridge
+    name: hertz-net
