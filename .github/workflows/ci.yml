@@ -39,7 +39,7 @@ jobs:
           --health-retries=10
 
     env:
-      IMAGE_TAG: staging-${GITHUB_SHA::7} # buat IMAGE_TAG global di job
+      IMAGE_TAG: staging-${{ github.sha.substring(0, 7) }}
 
     steps:
       - name: Checkout code
