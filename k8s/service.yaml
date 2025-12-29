@@ -4,9 +4,9 @@ metadata:
   name: hertz-service
 spec:
   type: NodePort
+  selector:
+    app: hertz-app-staging
   ports:
     - port: 80
       targetPort: 8080
       nodePort: 30080
-  selector:
-    app: hertz-app
