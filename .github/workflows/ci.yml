@@ -105,6 +105,7 @@ jobs:
 
       - name: Push Docker Image to Registry
         run: |
+          IMAGE_TAG=staging-${GITHUB_SHA::7}
           docker push myusername/myapp:${IMAGE_TAG}
           echo "Docker image pushed successfully with tag: ${IMAGE_TAG}"
       
