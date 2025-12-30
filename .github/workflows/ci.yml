@@ -106,10 +106,14 @@ jobs:
           docker push afifmusyayyidin32/testing-myapp:$IMAGE_TAG
           echo "Docker image pushed successfully with tag: $IMAGE_TAG"
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: '1.29'
+      - name: Install kubectl manually
+        run: |
+          KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+          echo "Installing kubectl version $KUBECTL_VERSION"
+          curl -LO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
 
       - name: Configure Kubeconfig
         run: |
