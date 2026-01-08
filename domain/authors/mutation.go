@@ -2,15 +2,19 @@ package authors
 
 import (
 	"context"
+	"time"
 
+	"github.com/afif-musyayyidin/hertz-boilerplate/middleware"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthorMutation interface {
 	CreateAuthor(ctx context.Context, u *AuthorInput) (*uuid.UUID, error)
 	UpdateAuthor(ctx context.Context, u *AuthorInput, id uuid.UUID) (*uuid.UUID, error)
 	GetAuthorByID(ctx context.Context, id uuid.UUID) (*Author, error)
+	LoginAuthor(ctx context.Context, email string, password string) (*string, error)
 	GetAuthorByIDList(ctx context.Context, idList []uuid.UUID) ([]Author, error)
 	FindIDNameByName(ctx context.Context, name string) ([]*AuthorIDName, error)
 }
@@ -79,4 +83,19 @@ func (m *authorMutation) GetAuthorByID(ctx context.Context, id uuid.UUID) (*Auth
 
 func (m *authorMutation) GetAuthorByIDList(ctx context.Context, idList []uuid.UUID) ([]Author, error) {
 	return m.repo.FindByIDList(ctx, idList)
+}
+
+func (m *authorMutation) LoginAuthor(ctx context.Context, email string, password string) (*string, error) {
+	author, err := m.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(author.Password), []byte(password)); err != nil {
+		return nil, err
+	}
+	token, err := middleware.GenerateToken(author.ID.String(), author.Name, author.Email, 24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+	return &token, nil
 }

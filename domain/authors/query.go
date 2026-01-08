@@ -1,8 +1,8 @@
 package authors
 
 const CreateAuthorQuery = `
-	INSERT INTO authors (id, name, email)
-	VALUES (:id, :name, :email)
+	INSERT INTO authors (id, name, email, password)
+	VALUES (:id, :name, :email, :password)
 `
 
 const UpdateAuthorQuery = `
@@ -21,4 +21,8 @@ const FindAuthorByIDListQuery = `
 
 const GetIDAuthorsByNameQuery = `
 	SELECT id, name FROM authors WHERE name = $1
+`
+
+const FindAuthorByEmailQuery = `
+	SELECT id, name, email, password FROM authors WHERE email = $1
 `

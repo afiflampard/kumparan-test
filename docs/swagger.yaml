@@ -19,8 +19,6 @@ definitions:
     type: object
   articles.ArticleInput:
     properties:
-      author_id:
-        type: string
       body:
         type: string
       title:
@@ -40,6 +38,8 @@ definitions:
         type: string
       name:
         type: string
+      password:
+        type: string
       updated_at:
         type: string
     type: object
@@ -53,6 +53,8 @@ definitions:
         type: string
       name:
         type: string
+      password:
+        type: string
       updated_at:
         type: string
     type: object
@@ -61,6 +63,15 @@ definitions:
       email:
         type: string
       name:
+        type: string
+      password:
+        type: string
+    type: object
+  authors.LoginAuthorRequest:
+    properties:
+      email:
+        type: string
+      password:
         type: string
     type: object
   infra.ErrorResponse:
@@ -75,10 +86,36 @@ definitions:
 host: localhost:8080
 info:
   contact: {}
-  description: This is the API documentation for Kumparan Project
-  title: Kumparan API
+  description: This is the API documentation for Test Git Project
+  title: Test Gits API
   version: "1.0"
 paths:
+  /article/all:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/articles.Article'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/infra.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/infra.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all article
+      tags:
+      - Article
   /article/author-name:
     get:
       consumes:
@@ -163,6 +200,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/infra.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create article
       tags:
       - Article
@@ -196,6 +235,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/infra.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create many article
       tags:
       - Article
@@ -260,6 +301,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/infra.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update article
       tags:
       - Article
@@ -290,6 +333,35 @@ paths:
           schema:
             $ref: '#/definitions/infra.ErrorResponse'
       summary: Create author
+      tags:
+      - Author
+  /author/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login request
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/authors.LoginAuthorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/infra.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/infra.ErrorResponse'
+      summary: Login author
       tags:
       - Author
   /author/update/{id}:
@@ -326,4 +398,9 @@ paths:
       summary: Update author
       tags:
       - Author
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

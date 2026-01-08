@@ -26,8 +26,8 @@ func (a *ArticleRepo) FindByID(ctx context.Context, id uuid.UUID) (*Article, err
 }
 
 // Save implements ArticleRepository.
-func (a *ArticleRepo) Save(ctx context.Context, u *ArticleInput, tx *sqlx.Tx) (*Article, error) {
-	newArticle := CreateNewArticle(*u)
+func (a *ArticleRepo) Save(ctx context.Context, u *ArticleInput, authorID uuid.UUID, tx *sqlx.Tx) (*Article, error) {
+	newArticle := CreateNewArticle(*u, authorID)
 	_, err := tx.NamedExecContext(ctx, CreateArticleQuery, newArticle)
 	if err != nil {
 		return nil, err
@@ -36,8 +36,8 @@ func (a *ArticleRepo) Save(ctx context.Context, u *ArticleInput, tx *sqlx.Tx) (*
 }
 
 // Update implements ArticleRepository.
-func (a *ArticleRepo) Update(ctx context.Context, u *ArticleInput, id uuid.UUID, tx *sqlx.Tx) (*uuid.UUID, error) {
-	article := u.ToArticleUpdate(id)
+func (a *ArticleRepo) Update(ctx context.Context, u *ArticleInput, id uuid.UUID, authorID uuid.UUID, tx *sqlx.Tx) (*uuid.UUID, error) {
+	article := u.ToArticleUpdate(id, authorID)
 	_, err := tx.NamedExecContext(ctx, UpdateArticleQuery, article)
 	if err != nil {
 		return nil, err
@@ -45,8 +45,8 @@ func (a *ArticleRepo) Update(ctx context.Context, u *ArticleInput, id uuid.UUID,
 	return &article.ID, nil
 }
 
-func (a *ArticleRepo) CreateManyArticle(ctx context.Context, u []*ArticleInput, tx *sqlx.Tx) ([]Article, error) {
-	articles := CreateManyArticle(u)
+func (a *ArticleRepo) CreateManyArticle(ctx context.Context, u []*ArticleInput, authorID uuid.UUID, tx *sqlx.Tx) ([]Article, error) {
+	articles := CreateManyArticle(u, authorID)
 	stmt, err := tx.PrepareNamedContext(ctx, CreateArticleQuery)
 	if err != nil {
 		return nil, err

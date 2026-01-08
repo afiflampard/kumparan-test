@@ -11,6 +11,7 @@ import (
 type ArticleIndexer interface {
 	Index(ctx context.Context, a *Article) error
 	Search(ctx context.Context, keyword string) ([]*Article, error)
+	GetAllArticle(ctx context.Context) ([]*Article, error)
 	GetArticleByAuthorID(ctx context.Context, authorID uuid.UUID) ([]*Article, error)
 	GetArticleByAuthorIDList(ctx context.Context, authorIDList []uuid.UUID) ([]*Article, error)
 	UpdateField(ctx context.Context, id string, fields map[string]interface{}) error
@@ -31,6 +32,24 @@ func (i *articleIndexer) Index(ctx context.Context, a *Article) error {
 		BodyJson(a).
 		Do(ctx)
 	return err
+}
+
+func (i *articleIndexer) GetAllArticle(ctx context.Context) ([]*Article, error) {
+	searchResult, err := i.es.Search().
+		Index("articles").
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Article, 0, len(searchResult.Hits.Hits))
+	for _, hit := range searchResult.Hits.Hits {
+		var a Article
+		if err := json.Unmarshal(hit.Source, &a); err != nil {
+			continue
+		}
+		results = append(results, &a)
+	}
+	return results, nil
 }
 
 func (i *articleIndexer) GetArticleByAuthorID(ctx context.Context, authorID uuid.UUID) ([]*Article, error) {

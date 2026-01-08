@@ -43,27 +43,27 @@ func (s *Service) UpdateAuthor(ctx context.Context, u authors.AuthorInput, id uu
 	return idResult, nil
 }
 
-func (s *Service) CreateArticle(ctx context.Context, u *articles.ArticleInput) (*uuid.UUID, error) {
+func (s *Service) CreateArticle(ctx context.Context, u *articles.ArticleInput, authorID uuid.UUID) (*uuid.UUID, error) {
 	mutation := articles.NewArticleMutation(s.repoArticles, s.index, s.db, authors.NewAuthorMutation(s.repoAuthors, s.db))
-	idResult, err := mutation.CreateArticle(ctx, u)
+	idResult, err := mutation.CreateArticle(ctx, u, authorID)
 	if err != nil {
 		return nil, err
 	}
 	return idResult, nil
 }
 
-func (s *Service) CreateManyArticle(ctx context.Context, u []*articles.ArticleInput) ([]*uuid.UUID, error) {
+func (s *Service) CreateManyArticle(ctx context.Context, u []*articles.ArticleInput, authorID uuid.UUID) ([]*uuid.UUID, error) {
 	mutation := articles.NewArticleMutation(s.repoArticles, s.index, s.db, authors.NewAuthorMutation(s.repoAuthors, s.db))
-	idResult, err := mutation.CreateManyArticle(ctx, u)
+	idResult, err := mutation.CreateManyArticle(ctx, u, authorID)
 	if err != nil {
 		return nil, err
 	}
 	return idResult, nil
 }
 
-func (s *Service) UpdateArticle(ctx context.Context, u *articles.ArticleInput, id uuid.UUID) (*uuid.UUID, error) {
+func (s *Service) UpdateArticle(ctx context.Context, u *articles.ArticleInput, id uuid.UUID, authorID uuid.UUID) (*uuid.UUID, error) {
 	mutation := articles.NewArticleMutation(s.repoArticles, s.index, s.db, authors.NewAuthorMutation(s.repoAuthors, s.db))
-	idResult, err := mutation.UpdateArticle(ctx, u, id)
+	idResult, err := mutation.UpdateArticle(ctx, u, id, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,4 +95,22 @@ func (s *Service) GetArticleByAuthorName(ctx context.Context, name string) ([]*a
 		return nil, err
 	}
 	return articleWithAuthorList, nil
+}
+
+func (s *Service) LoginAuthor(ctx context.Context, email string, password string) (*string, error) {
+	mutation := authors.NewAuthorMutation(s.repoAuthors, s.db)
+	token, err := mutation.LoginAuthor(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (s *Service) GetAllArticle(ctx context.Context) ([]*articles.Article, error) {
+	mutation := articles.NewArticleMutation(s.repoArticles, s.index, s.db, authors.NewAuthorMutation(s.repoAuthors, s.db))
+	articleList, err := mutation.GetAllArticle(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return articleList, nil
 }

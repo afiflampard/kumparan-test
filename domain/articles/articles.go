@@ -21,7 +21,6 @@ type Article struct {
 type ArticleInput struct {
 	Title    string    `json:"title"`
 	Body     string    `json:"body"`
-	AuthorID uuid.UUID `json:"author_id"`
 }
 
 type ArticleInputUpdate struct {
@@ -41,31 +40,31 @@ func (a *Article) TableName() string {
 	return "articles"
 }
 
-func CreateNewArticle(input ArticleInput) Article {
+func CreateNewArticle(input ArticleInput, authorID uuid.UUID) Article {
 	return Article{
 		ID:        uuid.New(),
 		Title:     input.Title,
 		Body:      input.Body,
-		AuthorID:  input.AuthorID,
+		AuthorID:  authorID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 }
 
-func CreateManyArticle(input []*ArticleInput) []Article {
+func CreateManyArticle(input []*ArticleInput, authorID uuid.UUID) []Article {
 	var articles []Article
 	for _, article := range input {
-		articles = append(articles, CreateNewArticle(*article))
+		articles = append(articles, CreateNewArticle(*article, authorID))
 	}
 	return articles
 }
 
-func (a *ArticleInput) ToArticleUpdate(id uuid.UUID) ArticleInputUpdate {
+func (a *ArticleInput) ToArticleUpdate(id uuid.UUID, authorID uuid.UUID) ArticleInputUpdate {
 	return ArticleInputUpdate{
 		ID:        id,
 		Title:     a.Title,
 		Body:      a.Body,
-		AuthorID:  a.AuthorID,
+		AuthorID:  authorID,
 		UpdatedAt: time.Now(),
 	}
 }

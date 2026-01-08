@@ -49,18 +49,24 @@ func (h *AppHandler) CreateAuthor(ctx context.Context, c *app.RequestContext) {
 // @Accept json
 // @Produce json
 // @Param article body articles.ArticleInput true "Article input"
+// @Security BearerAuth
 // @Success 200 {object} string "UUID"
 // @Failure 400 {object} infra.ErrorResponse
 // @Failure 500 {object} infra.ErrorResponse
 // @Router /article/create [post]
 func (h *AppHandler) CreateArticle(ctx context.Context, c *app.RequestContext) {
 	var article articles.ArticleInput
+	authorID := c.GetString("author_id")
+	if authorID == "" {
+		infra.JSONError(c, 400, "Missing Author ID", nil)
+		return
+	}
 	if err := c.Bind(&article); err != nil {
 		infra.JSONError(c, 400, "Bad Request", err)
 		return
 	}
 
-	id, err := h.svc.CreateArticle(ctx, &article)
+	id, err := h.svc.CreateArticle(ctx, &article, uuid.MustParse(authorID))
 	if err != nil {
 		infra.JSONError(c, 500, "Internal Server Error", err)
 		return
@@ -74,18 +80,24 @@ func (h *AppHandler) CreateArticle(ctx context.Context, c *app.RequestContext) {
 // @Accept json
 // @Produce json
 // @Param article body []articles.ArticleInput true "Article input list"
+// @Security BearerAuth
 // @Success 200 {array} string "UUID list"
 // @Failure 400 {object} infra.ErrorResponse
 // @Failure 500 {object} infra.ErrorResponse
 // @Router /article/create-bulk [post]
 func (h *AppHandler) CreateManyArticle(ctx context.Context, c *app.RequestContext) {
 	var articleList []*articles.ArticleInput
+	authorID := c.GetString("author_id")
+	if authorID == "" {
+		infra.JSONError(c, 400, "Missing Author ID", nil)
+		return
+	}
 	if err := c.Bind(&articleList); err != nil {
 		infra.JSONError(c, 400, "Bad Request", err)
 		return
 	}
 
-	idList, err := h.svc.CreateManyArticle(ctx, articleList)
+	idList, err := h.svc.CreateManyArticle(ctx, articleList, uuid.MustParse(authorID))
 	if err != nil {
 		infra.JSONError(c, 500, "Internal Server Error", err)
 		return
@@ -99,6 +111,7 @@ func (h *AppHandler) CreateManyArticle(ctx context.Context, c *app.RequestContex
 // @Accept json
 // @Produce json
 // @Param id path string true "Article ID"
+// @Security BearerAuth
 // @Param article body articles.ArticleInput true "Article input"
 // @Success 200 {object} string "UUID"
 // @Failure 400 {object} infra.ErrorResponse
@@ -110,6 +123,11 @@ func (h *AppHandler) UpdateArticle(ctx context.Context, c *app.RequestContext) {
 		infra.JSONError(c, 400, "Bad Request", err)
 		return
 	}
+	authorID := c.GetString("author_id")
+	if authorID == "" {
+		infra.JSONError(c, 400, "Missing Author ID", nil)
+		return
+	}
 
 	idArticle := c.Param("id")
 	if idArticle == "" {
@@ -117,7 +135,7 @@ func (h *AppHandler) UpdateArticle(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	id, err := h.svc.UpdateArticle(ctx, &article, uuid.MustParse(idArticle))
+	id, err := h.svc.UpdateArticle(ctx, &article, uuid.MustParse(idArticle), uuid.MustParse(authorID))
 	if err != nil {
 		infra.JSONError(c, 500, "Internal Server Error", err)
 		return
@@ -230,5 +248,52 @@ func (h *AppHandler) GetArticleByAuthorName(ctx context.Context, c *app.RequestC
 		return
 	}
 
+	infra.JSONSuccess(c, articleList, "Article list")
+}
+
+// @Summary Login author
+// @Tags Author
+// @Accept json
+// @Produce json
+// @Param loginRequest body authors.LoginAuthorRequest true "Login request"
+// @Success 200 {object} string "Token"
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /author/login [post]
+func (h *AppHandler) LoginAuthor(ctx context.Context, c *app.RequestContext) {
+	var loginRequest authors.LoginAuthorRequest
+	if err := c.Bind(&loginRequest); err != nil {
+		infra.JSONError(c, 400, "Bad Request", err)
+		return
+	}
+	
+	if loginRequest.Email == "" || loginRequest.Password == "" {
+		infra.JSONError(c, 400, "missing email or password", nil)
+		return
+	}
+
+	token, err := h.svc.LoginAuthor(ctx, loginRequest.Email, loginRequest.Password)
+	if err != nil {
+		infra.JSONError(c, 500, "Internal Server Error", err)
+		return	
+	}
+	infra.JSONSuccess(c, token, "Login successful")
+}
+
+// @Summary Get all article
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} articles.Article
+// @Failure 400 {object} infra.ErrorResponse
+// @Failure 500 {object} infra.ErrorResponse
+// @Router /article/all [get]
+func (h *AppHandler) GetAllArticle(ctx context.Context, c *app.RequestContext) {
+	articleList, err := h.svc.GetAllArticle(ctx)
+	if err != nil {
+		infra.JSONError(c, 500, "Internal Server Error", err)
+		return
+	}
 	infra.JSONSuccess(c, articleList, "Article list")
 }

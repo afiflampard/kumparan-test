@@ -2,30 +2,30 @@ version: '3.8'
 
 services:
   # ------------------ Hertz App ------------------
-  hertz-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: hertz-app
-    ports:
-      - "8080:8080"
-    environment:
-      DB_HOST: postgres-primary
-      DB_PORT: 5432
-      DB_USER: hertz_user
-      DB_PASSWORD: hertz_pass
-      DB_NAME: hertz_db
-      JWT_SECRET: supersecret
-      DB_REPLICA_HOST: postgres-replica
-      DB_REPLICA_PORT: 5432
-      ELASTIC_URL: http://elasticsearch:9200
-    depends_on:
-      postgres-primary:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    networks:
-      - hertz-net
+  # hertz-app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: hertz-app
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     DB_HOST: postgres-primary
+  #     DB_PORT: 5432
+  #     DB_USER: hertz_user
+  #     DB_PASSWORD: hertz_pass
+  #     DB_NAME: hertz_db
+  #     JWT_SECRET: supersecret
+  #     DB_REPLICA_HOST: postgres-replica
+  #     DB_REPLICA_PORT: 5432
+  #     ELASTIC_URL: http://elasticsearch:9200
+  #   depends_on:
+  #     postgres-primary:
+  #       condition: service_healthy
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   networks:
+  #     - hertz-net
 
   # ------------------ PostgreSQL Primary ------------------
   postgres-primary:

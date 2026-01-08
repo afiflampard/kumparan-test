@@ -12,11 +12,14 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 )
 
-// @title           Kumparan API
+// @title           Test Gits API
 // @version         1.0
-// @description     This is the API documentation for Kumparan Project
+// @description     This is the API documentation for Test Git Project
 // @host            localhost:8080
 // @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg := config.LoadConfig()
 	db := infra.InitPostgres(cfg)

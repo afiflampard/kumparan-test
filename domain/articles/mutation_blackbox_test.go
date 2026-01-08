@@ -99,9 +99,8 @@ func TestCreateArticle(t *testing.T) {
 	input := articles.ArticleInput{
 		Title:    "Test Article",
 		Body:     "Test Body",
-		AuthorID: authorID,
 	}
-	id, err := mutation.CreateArticle(ctx, &input)
+	id, err := mutation.CreateArticle(ctx, &input, authorID)
 	assert.NoError(t, err)
 	assert.NotNil(t, id)
 
@@ -134,18 +133,16 @@ func TestUpdateArticle(t *testing.T) {
 	input := articles.ArticleInput{
 		Title:    "Old Title",
 		Body:     "Old Body",
-		AuthorID: authorID,
 	}
-	id, err := mutation.CreateArticle(ctx, &input)
+	id, err := mutation.CreateArticle(ctx, &input, authorID)
 	assert.NoError(t, err)
 
 	mutation2 := newMutation()
 	updateInput := articles.ArticleInput{
 		Title:    "New Title",
 		Body:     "New Body",
-		AuthorID: authorID,
 	}
-	_, err = mutation2.UpdateArticle(ctx, &updateInput, *id)
+	_, err = mutation2.UpdateArticle(ctx, &updateInput, *id, authorID)
 	assert.NoError(t, err)
 
 	var title string
@@ -175,9 +172,8 @@ func TestGetArticleByID(t *testing.T) {
 	input := articles.ArticleInput{
 		Title:    "Get Title",
 		Body:     "Get Body",
-		AuthorID: authorID,
 	}
-	id, err := mutation.CreateArticle(ctx, &input)
+	id, err := mutation.CreateArticle(ctx, &input, authorID)
 	assert.NoError(t, err)
 	article, err := mutation.GetArticleByID(ctx, *id)
 	assert.NoError(t, err)
@@ -199,9 +195,8 @@ func TestGetArticleWithAuthorByID(t *testing.T) {
 	input := articles.ArticleInput{
 		Title:    "Siti's Article",
 		Body:     "Content from Siti",
-		AuthorID: authorID,
 	}
-	_, err = mutation.CreateArticle(ctx, &input)
+	_, err = mutation.CreateArticle(ctx, &input, authorID)
 	require.NoError(t, err)
 
 	_, _ = es.Refresh("articles").Do(ctx)

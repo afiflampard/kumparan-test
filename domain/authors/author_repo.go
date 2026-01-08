@@ -68,3 +68,12 @@ func (r *AuthorRepo) FindIDNameByName(ctx context.Context, name string) ([]*Auth
 	}
 	return idNameList, nil
 }
+
+func (r *AuthorRepo) FindByEmail(ctx context.Context, email string) (*Author, error) {
+	var u Author
+	if err := r.dbReplica.GetContext(ctx, &u, FindAuthorByEmailQuery, email); err != nil {
+		logger.Debug("error find by email", err)
+		return nil, err
+	}
+	return &u, nil
+}

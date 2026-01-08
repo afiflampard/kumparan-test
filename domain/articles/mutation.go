@@ -9,13 +9,14 @@ import (
 )
 
 type ArticleMutation interface {
-	CreateArticle(ctx context.Context, u *ArticleInput) (*uuid.UUID, error)
-	UpdateArticle(ctx context.Context, u *ArticleInput, id uuid.UUID) (*uuid.UUID, error)
+	CreateArticle(ctx context.Context, u *ArticleInput, authorID uuid.UUID) (*uuid.UUID, error)
+	UpdateArticle(ctx context.Context, u *ArticleInput, id uuid.UUID, authorID uuid.UUID) (*uuid.UUID, error)
 	GetArticleByKeyWord(ctx context.Context, keyword string) ([]*Article, error)
-	CreateManyArticle(ctx context.Context, u []*ArticleInput) ([]*uuid.UUID, error)
+	CreateManyArticle(ctx context.Context, u []*ArticleInput, authorID uuid.UUID) ([]*uuid.UUID, error)
 	GetArticleWithAuthorByID(ctx context.Context, id uuid.UUID) (*ArticleWithAuthor, error)
 	GetArticleByAuthorName(ctx context.Context, name string) ([]*ArticleWithAuthor, error)
 	GetArticleByID(ctx context.Context, id uuid.UUID) (*Article, error)
+	GetAllArticle(ctx context.Context) ([]*Article, error)
 }
 
 type articleMutation struct {
@@ -34,12 +35,12 @@ func NewArticleMutation(repo ArticleRepository, index ArticleIndexer, db *sqlx.D
 	}
 }
 
-func (m *articleMutation) CreateArticle(ctx context.Context, u *ArticleInput) (*uuid.UUID, error) {
+func (m *articleMutation) CreateArticle(ctx context.Context, u *ArticleInput, authorID uuid.UUID) (*uuid.UUID, error) {
 	tx, err := m.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	newArticle, err := m.repo.Save(ctx, u, tx)
+	newArticle, err := m.repo.Save(ctx, u, authorID, tx)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
@@ -73,7 +74,7 @@ func (m *articleMutation) GetArticleByID(ctx context.Context, id uuid.UUID) (*Ar
 	return article, nil
 }
 
-func (m *articleMutation) UpdateArticle(ctx context.Context, u *ArticleInput, id uuid.UUID) (*uuid.UUID, error) {
+func (m *articleMutation) UpdateArticle(ctx context.Context, u *ArticleInput, id uuid.UUID, authorID uuid.UUID) (*uuid.UUID, error) {
 	if u == nil {
 		return nil, ErrInvalidInput.WithDetails(map[string]interface{}{
 			"id": id,
@@ -88,7 +89,7 @@ func (m *articleMutation) UpdateArticle(ctx context.Context, u *ArticleInput, id
 	if err != nil {
 		return nil, err
 	}
-	idResult, err := m.repo.Update(ctx, u, id, tx)
+	idResult, err := m.repo.Update(ctx, u, id, authorID, tx)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
@@ -175,13 +176,13 @@ func (m *articleMutation) GetArticleByKeyWord(ctx context.Context, keyword strin
 	return articleList, nil
 }
 
-func (m *articleMutation) CreateManyArticle(ctx context.Context, u []*ArticleInput) ([]*uuid.UUID, error) {
+func (m *articleMutation) CreateManyArticle(ctx context.Context, u []*ArticleInput, authorID uuid.UUID) ([]*uuid.UUID, error) {
 	var articleListID []*uuid.UUID
 	tx, err := m.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	articleList, err := m.repo.CreateManyArticle(ctx, u, tx)
+	articleList, err := m.repo.CreateManyArticle(ctx, u, authorID, tx)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, ErrNotFound.WithDetails(map[string]interface{}{
@@ -230,4 +231,23 @@ func (m *articleMutation) GetArticleWithAuthorByID(ctx context.Context, id uuid.
 		Author:  *getAuthor,
 		Article: getArticle,
 	}, nil
+}
+
+func (m *articleMutation) GetAllArticle(ctx context.Context) ([]*Article, error) {
+	articleList, err := m.index.GetAllArticle(ctx)
+	if err != nil {
+		return nil, ErrNotFound.WithDetails(map[string]interface{}{
+			"error": err,
+		})
+	}
+	for _, article := range articleList {
+		getAuthor, err := m.author.GetAuthorByID(ctx, article.AuthorID)
+		if err != nil {
+			return nil, ErrNotFound.WithDetails(map[string]interface{}{
+				"id": article.AuthorID,
+			})
+		}
+		article.Author = getAuthor
+	}
+	return articleList, nil
 }
