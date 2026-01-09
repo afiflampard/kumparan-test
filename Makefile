@@ -8,6 +8,9 @@ ENV=development
 dev:
 	$(GO) run main.go
 
+swagger:
+	swag init -g main.go -o ./docs
+
 migrate-authors:
 	$(MIGRATE) up -config=domain/authors/dbconfig.yml -env=$(ENV)
 
