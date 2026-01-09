@@ -18,3 +18,9 @@ migrate-articles:
 	$(MIGRATE) up -config=domain/articles/dbconfig.yml -env=$(ENV)
 
 migrate-all: migrate-authors migrate-articles
+
+rollback-authors:
+	$(MIGRATE) down -config=domain/authors/dbconfig.yml -env=$(ENV)
+
+rollback-articles:
+	$(MIGRATE) down -config=domain/articles/dbconfig.yml -env=$(ENV)
